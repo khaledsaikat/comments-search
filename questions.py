@@ -17,7 +17,7 @@ class Questions:
             question["answers"] = [answer["content"] for answer in feedback["answers"]]
             yield question
 
-    def retreive_write_json(self):
+    def retrieve_write_json(self):
         self.write_json({"questions": list(self.retrieve())}, "data/questions.json")
 
     @staticmethod
