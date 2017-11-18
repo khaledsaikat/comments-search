@@ -1,0 +1,27 @@
+<!doctype html>
+
+<html>
+<head>
+    <title>Some title</title>
+</head>
+
+<body>
+<form>
+    <input type="text" name="q" value="{{ query }}"/>
+    <input type="submit" value="Search">
+</form>
+
+<h3>Result Found: {{ query_result.hits.total }}</h3>
+
+{% for question in query_result.hits.hits %}
+    <ul>{{ question._source.question }}</ul>
+    {% for answer in question._source.answers %}
+        <li>{{ answer }}</li>
+    {% endfor %}
+{% endfor %}
+
+</body>
+</html>
+
+
+
