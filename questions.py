@@ -4,7 +4,7 @@ from typing import Dict
 import requests
 from elasticsearch import Elasticsearch
 
-QUESTIONS_URL = "https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=20"
+QUESTIONS_URL = "https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=100"
 
 
 class Questions:
