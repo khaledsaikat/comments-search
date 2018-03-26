@@ -1,27 +1,37 @@
 import json
-from typing import Dict
+from typing import Dict, List
 
 import requests
 from elasticsearch import Elasticsearch
 from sklearn.feature_extraction.text import CountVectorizer
 
-QUESTIONS_URL = "https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=100"
+BASE_URL = "https://www.khanacademy.org"
+QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=10",
+                  "https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=10"]
 
 
 class Questions:
-    """Handle questions from db"""
+    """Handle questions"""
     request = None
 
     def __init__(self):
         self.elasticsearch = Elasticsearch()
 
-    def retrieve(self):
-        """Retrieve questions from url"""
-        self.request = requests.get(QUESTIONS_URL)
+    def retrieve(self) -> List[dict]:
+        """Retrieve questions"""
+        questions = []
+        for url in QUESTIONS_URLS:
+            questions.extend(list(self.retrieve_url(url)))
+        return questions
+
+    def retrieve_url(self, url: str):
+        """Retrieve questions from provided url"""
+        self.request = requests.get(url)
         for feedback in self.request.json()["feedback"]:
             question = dict()
             question["question"] = feedback["content"]
             question["answers"] = [answer["content"] for answer in feedback["answers"]]
+            question["url"] = BASE_URL + feedback["permalink"]
             yield question
 
     def retrieve_write_json(self):
