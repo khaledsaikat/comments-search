@@ -6,8 +6,10 @@ from elasticsearch import Elasticsearch
 from sklearn.feature_extraction.text import CountVectorizer
 
 BASE_URL = "https://www.khanacademy.org"
-QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=10",
-                  "https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=10"]
+QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=1000",
+                  "https://www.khanacademy.org/api/internal/discussions/video/introduction-to-vectors-and-scalars/questions?limit=1000",
+                  "https://www.khanacademy.org/api/internal/discussions/video/making-webpages-intro/questions?limit=1000",
+                  "https://www.khanacademy.org/api/internal/discussions/video/atomic-weight-and-atomic-mass/questions?limit=1000"]
 
 
 class Questions:
@@ -51,11 +53,15 @@ class Questions:
             res = self.elasticsearch.index(index="questions", doc_type="question", id=index, body=question)
             print(res)
 
-    def search(self, query: str):
+    def search(self, _query: str):
         """Search from elasticsearch"""
-        body = {"query": {
-            "match": {"question": query}
-        }}
+        body = {
+
+            "query": {
+                "match_phrase": {"question": _query},
+                #"term": {"question": _query}
+                }
+            }
         return self.elasticsearch.search(index="questions", body=body)
 
     def search_result(self, query: str):
@@ -78,3 +84,5 @@ class Questions:
 
 if __name__ == "__main__":
     Questions().search_result("what")
+    #Questions().store_to_elasticsearch()
+    #Questions().retrieve_write_json()
