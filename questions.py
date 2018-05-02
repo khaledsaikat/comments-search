@@ -17,12 +17,16 @@ class Questions:
     def __init__(self):
         self.elasticsearch = Elasticsearch()
 
-    def retrieve(self) -> List[dict]:
+    def retrieve(self) -> List[Dict]:
         """Retrieve questions"""
         questions = []
         for url in QUESTIONS_URLS:
             questions.extend(list(self.retrieve_url(url)))
-        return questions
+        return self.remove_duplicate(questions)
+
+    @staticmethod
+    def remove_duplicate(questions: List[Dict]) -> List[Dict]:
+        return list({question["key"]: question for question in questions}.values())
 
     def retrieve_url(self, url: str):
         """Retrieve questions from provided url"""
@@ -32,6 +36,7 @@ class Questions:
             question["question"] = feedback["content"]
             question["answers"] = [answer["content"] for answer in feedback["answers"]]
             question["url"] = BASE_URL + feedback["permalink"]
+            question["key"] = feedback["key"]
             yield question
 
     def retrieve_write_json(self):
@@ -47,14 +52,15 @@ class Questions:
     def store_to_elasticsearch(self):
         """Store questions to elasticsearch"""
         questions = self.retrieve()
+        print("Questions count: ", len(questions))
         for index, question in enumerate(questions):
-            res = self.elasticsearch.index(index="questions", doc_type="question", id=index, body=question)
+            res = self.elasticsearch.index(index="questions", doc_type="_doc", id=index, body=question)
             print(res)
 
-    def search(self, query: str):
+    def search(self, _query: str):
         """Search from elasticsearch"""
         body = {"query": {
-            "match": {"question": query}
+            "match": {"question": {"query": _query, "operator": "and"}}
         }}
         return self.elasticsearch.search(index="questions", body=body)
 
@@ -77,4 +83,5 @@ class Questions:
 
 
 if __name__ == "__main__":
-    Questions().search_result("what")
+    #Questions().search_result("what")
+    Questions().store_to_elasticsearch()
