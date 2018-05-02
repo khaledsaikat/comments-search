@@ -22,24 +22,26 @@
             <h1 class="display-3">Searching Query</h1>
             <div class="form-group">
                 <form>
-                    <input type="text" name="q" class="typeahead" placeholder="Search..." value="{{ query }}">
+                    <input type="text" name="q" class="typeahead" placeholder="Write a query for the search..." value="{{ query }}">
                     <input type="submit" value="Search">
                 </form>
             </div>
 
-            <h3>Result Found: {{ query_result.hits.total }}</h3>
+            {% if query_result %}
+                <h3>Result Found: {{ query_result.hits.total }}</h3>
 
-            {% for question in query_result.hits.hits %}
-            <div class="list-group">
-                <a href="#" class="list-group-item list-group-item-action active">
-          {{ question._source.question }}
-        </a>
+                {% for question in query_result.hits.hits %}
+                <div class="list-group">
+                    <a href="{{ question._source.url }}" class="list-group-item list-group-item-action active">
+              {{ question.highlight.question[0] }} <!--{{ question._source.question }}-->
+            </a>
 
-                {% for answer in question._source.answers %}
-                <li class="list-group-item">{{ answer }}</li>
+                    {% for answer in question._source.answers %}
+                    <li class="list-group-item">{{ answer }}</li>
+                    {% endfor %}
+                </div>
                 {% endfor %}
-            </div>
-            {% endfor %}
+            {% endif %}
         </div>
     </body>
 </htm>

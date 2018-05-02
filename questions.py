@@ -6,8 +6,13 @@ from elasticsearch import Elasticsearch
 from sklearn.feature_extraction.text import CountVectorizer
 
 BASE_URL = "https://www.khanacademy.org"
-QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=10",
-                  "https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=10"]
+
+QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=100",
+"https://www.khanacademy.org/api/internal/discussions/video/introduction-to-vectors-and-scalars/questions?limit=100",
+"https://www.khanacademy.org/api/internal/discussions/video/making-webpages-intro/questions?limit=100",
+"https://www.khanacademy.org/api/internal/discussions/video/atomic-weight-and-atomic-mass/questions?limit=100",
+"https://www.khanacademy.org/api/internal/discussions/video/reading-pictographs/questions?limit=100"]
+
 
 
 class Questions:
@@ -22,7 +27,7 @@ class Questions:
         questions = []
         for url in QUESTIONS_URLS:
             questions.extend(list(self.retrieve_url(url)))
-        return self.remove_duplicate(questions)
+        return questions
 
     @staticmethod
     def remove_duplicate(questions: List[Dict]) -> List[Dict]:
@@ -55,13 +60,26 @@ class Questions:
         print("Questions count: ", len(questions))
         for index, question in enumerate(questions):
             res = self.elasticsearch.index(index="questions", doc_type="_doc", id=index, body=question)
-            print(res)
+            #print(res)
 
     def search(self, _query: str):
         """Search from elasticsearch"""
-        body = {"query": {
-            "match": {"question": {"query": _query, "operator": "and"}}
-        }}
+        body = \
+        {
+            "query": {
+                "match": {
+                    "question": {
+                        "query": _query,
+                        "operator": "and"
+                    }
+                }
+            },
+            "highlight": {
+                "fields": {
+                    "question": {}
+                }
+            }
+        }
         return self.elasticsearch.search(index="questions", body=body)
 
     def search_result(self, query: str):
@@ -83,5 +101,5 @@ class Questions:
 
 
 if __name__ == "__main__":
-    #Questions().search_result("what")
-    Questions().store_to_elasticsearch()
+    Questions().search_result("what")
+    #Questions().store_to_elasticsearch()
