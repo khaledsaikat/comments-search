@@ -33,7 +33,7 @@
                 {% for question in query_result.hits.hits %}
                 <div class="list-group">
                     <a href="{{ question._source.url }}" class="list-group-item list-group-item-action active">
-              {{ question.highlight.question[0] }} <!--{{ question._source.question }}-->
+              {{ question.highlight.question[0]|safe }}
             </a>
 
                     {% for answer in question._source.answers %}
