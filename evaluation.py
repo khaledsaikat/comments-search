@@ -12,10 +12,14 @@ class Evaluation:
 
     @property
     def precision(self):
+        if len(self.predicted_ids) == 0:
+            return 0
         return len([_id for _id in self.predicted_ids if _id in self.actual_ids]) / len(self.predicted_ids)
 
     @property
     def recall(self):
+        if len(self.actual_ids) == 0:
+            return 0
         return len([_id for _id in self.actual_ids if _id in self.predicted_ids]) / len(self.actual_ids)
 
     @staticmethod
