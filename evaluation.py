@@ -24,6 +24,8 @@ class Evaluation:
 
     @staticmethod
     def f1(_precision, _recall):
+        if _precision + _recall == 0:
+            return 0
         return 2 * (_precision * _recall) / (_precision + _recall)
 
     def result(self):
