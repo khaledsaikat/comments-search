@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List
+from typing import Dict, List, Generator
 
 import requests
 from elasticsearch import Elasticsearch
@@ -7,27 +7,30 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 BASE_URL = "https://www.khanacademy.org"
 
-QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=100",
-"https://www.khanacademy.org/api/internal/discussions/video/introduction-to-vectors-and-scalars/questions?limit=100",
-"https://www.khanacademy.org/api/internal/discussions/video/making-webpages-intro/questions?limit=100",
-"https://www.khanacademy.org/api/internal/discussions/video/atomic-weight-and-atomic-mass/questions?limit=100",
-"https://www.khanacademy.org/api/internal/discussions/video/reading-pictographs/questions?limit=100"]
+QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=500",
+"https://www.khanacademy.org/api/internal/discussions/video/introduction-to-vectors-and-scalars/questions?limit=500",
+"https://www.khanacademy.org/api/internal/discussions/video/making-webpages-intro/questions?limit=500",
+"https://www.khanacademy.org/api/internal/discussions/video/atomic-weight-and-atomic-mass/questions?limit=500",
+"https://www.khanacademy.org/api/internal/discussions/video/reading-pictographs/questions?limit=500"]
 
 
 
 class Questions:
     """Handle questions"""
     request = None
+    questions: List[Dict] = []
 
     def __init__(self):
         self.elasticsearch = Elasticsearch()
 
     def retrieve(self) -> List[Dict]:
         """Retrieve questions"""
-        questions = []
+        if self.questions:
+            return self.questions
+
         for url in QUESTIONS_URLS:
-            questions.extend(list(self.retrieve_url(url)))
-        return questions
+            self.questions.extend(self.remove_empty_answers(self.retrieve_url(url)))
+        return self.questions
 
     @staticmethod
     def remove_duplicate(questions: List[Dict]) -> List[Dict]:
@@ -44,9 +47,15 @@ class Questions:
             question["key"] = feedback["key"]
             yield question
 
+    @staticmethod
+    def remove_empty_answers(questions: Generator, size=100) -> List[Dict]:
+        """Remove questions with empth answers and take first n questions"""
+        return [question for question in questions if len(question["answers"]) > 0][:size]
+
     def retrieve_write_json(self):
         """Write retrieve questions"""
-        self.write_json({"questions": list(self.retrieve())}, "data/questions.json")
+        data = {index: question for index, question in enumerate(self.retrieve())}
+        self.write_json(data, "data/questions.json")
 
     @staticmethod
     def write_json(data: Dict, file_path: str):
@@ -61,6 +70,13 @@ class Questions:
         for index, question in enumerate(questions):
             res = self.elasticsearch.index(index="questions", doc_type="_doc", id=index, body=question)
             #print(res)
+
+    def clean_import(self):
+        """Import questions to elastisearch and write to a json file"""
+        self.store_to_elasticsearch()
+        self.retrieve_write_json()
+        data = {index: question["question"] for index, question in enumerate(self.retrieve())}
+        self.write_json(data, "data/questions-only.json")
 
     def search(self, _query: str):
         """Search from elasticsearch"""
@@ -89,6 +105,10 @@ class Questions:
         for index, hit in enumerate(res['hits']['hits']):
             print("{}. {}\n".format(index + 1, hit["_source"]["question"]))
 
+    def result_ids(self, _query: str) -> List[int]:
+        result = self.search(_query)
+        return [item["_id"] for item in result["hits"]["hits"]] if result["hits"]["total"] > 0 else []
+
     def suggestions(self, query: str):
         """Generate suggestion for search input"""
         query_result = self.search(query)
@@ -101,5 +121,5 @@ class Questions:
 
 
 if __name__ == "__main__":
-    Questions().search_result("what")
-    #Questions().store_to_elasticsearch()
+    #Questions().search_result("what")
+    Questions().clean_import()
