@@ -8,17 +8,17 @@ from sklearn.feature_extraction.text import CountVectorizer
 BASE_URL = "https://www.khanacademy.org"
 
 QUESTIONS_URLS = ["https://www.khanacademy.org/api/internal/discussions/scratchpad/1981573965/questions?limit=500",
-"https://www.khanacademy.org/api/internal/discussions/video/introduction-to-vectors-and-scalars/questions?limit=500",
-"https://www.khanacademy.org/api/internal/discussions/video/making-webpages-intro/questions?limit=500",
-"https://www.khanacademy.org/api/internal/discussions/video/atomic-weight-and-atomic-mass/questions?limit=500",
-"https://www.khanacademy.org/api/internal/discussions/video/reading-pictographs/questions?limit=500"]
-
+                  "https://www.khanacademy.org/api/internal/discussions/video/introduction-to-vectors-and-scalars/questions?limit=500",
+                  "https://www.khanacademy.org/api/internal/discussions/video/making-webpages-intro/questions?limit=500",
+                  "https://www.khanacademy.org/api/internal/discussions/video/atomic-weight-and-atomic-mass/questions?limit=500",
+                  "https://www.khanacademy.org/api/internal/discussions/video/reading-pictographs/questions?limit=500"]
 
 
 class Questions:
     """Handle questions"""
     request = None
     questions: List[Dict] = []
+    indexName = "questions"
 
     def __init__(self):
         self.elasticsearch = Elasticsearch()
@@ -69,7 +69,7 @@ class Questions:
         print("Questions count: ", len(questions))
         for index, question in enumerate(questions):
             res = self.elasticsearch.index(index="questions", doc_type="_doc", id=index, body=question)
-            #print(res)
+            # print(res)
 
     def clean_import(self):
         """Import questions to elastisearch and write to a json file"""
@@ -81,24 +81,57 @@ class Questions:
     def search(self, _query: str):
         """Search from elasticsearch"""
         body = \
-        {
-            "query": {
-                "match": {
-                    "question": {
-                        "query": _query,
-                        "operator": "and"
+            {
+                "query": {
+                    "match": {
+                        "question": {
+                            "query": _query,
+                            "operator": "and"
+                        }
+                    }
+                },
+                "highlight": {
+                    "pre_tags": ["<strong>"],
+                    "post_tags": ["</strong>"],
+                    "fields": {
+                        "question": {}
                     }
                 }
-            },
-            "highlight": {
-                "pre_tags": ["<strong>"],
-                "post_tags": ["</strong>"],
-                "fields": {
-                    "question": {}
-                }
             }
-        }
-        return self.elasticsearch.search(index="questions", body=body)
+        return self.elasticsearch.search(index=self.indexName, body=body)
+
+    def combined_search(self, _query: str):
+        results = self.search(_query)
+        if results["hits"]["total"] > 0:
+            return results
+
+        queries = self.tokens_to_query(self.get_tokens(_query))
+        scores = [self.search(new_query)["hits"]["max_score"] for new_query in queries]
+        scores = [score if score else 0 for score in scores]
+        #print(queries, scores)
+        max_scores_index = scores.index(max(scores))
+        return self.search(queries[max_scores_index])
+        #return results
+
+    def get_tokens(self, _text: str) -> List[str]:
+        """Get tokens from a provided text. In our settings the method provide unigram tokens"""
+        body = \
+            {
+                "field": "question",
+                "text": _text
+            }
+        results = self.elasticsearch.indices.analyze(index=self.indexName, body=body)
+        return [result["token"] for result in results["tokens"]]
+
+    @staticmethod
+    def tokens_to_query(tokens: List[str]):
+        """get list of query with removing one token for each time"""
+        queries = []
+        for token in tokens:
+            tokens_copy = tokens.copy()
+            tokens_copy.remove(token)
+            queries.append(" ".join(tokens_copy))
+        return queries
 
     def search_result(self, query: str):
         """Show search result on console"""
@@ -123,5 +156,7 @@ class Questions:
 
 
 if __name__ == "__main__":
-    #Questions().search_result("what")
-    Questions().clean_import()
+    # Questions().search_result("what")
+    print(Questions().combined_search("difference1 between speed and velocity"))
+    #print(Questions.tokens_to_query(['a', 'b', 'c', 'd']))
+    # Questions().clean_import()

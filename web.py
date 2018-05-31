@@ -12,7 +12,7 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     query = request.args.get("q", "")
-    query_result = Questions().search(query) if query else {}
+    query_result = Questions().combined_search(query) if query else {}
     return render_template("index.html", query=query, query_result=query_result)
 
 
