@@ -38,6 +38,7 @@ Deactivate venv
 ### Running webapp
 
 source env/bin/activate
+
 python web.py
 
 Visit http://127.0.0.1:5000/
