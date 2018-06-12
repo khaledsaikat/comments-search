@@ -1,9 +1,6 @@
 # video-based-learning
-FLASK_APP=web.py flask run
-http://127.0.0.1:5000/
+
 Developed tutoring system based on web learning.
-
-
 
 ## Pre-configuration for Elasticsearch
 
@@ -26,3 +23,21 @@ PUT questions
   }
 }
 ```
+
+### Using virtualenv
+
+Installing venv
+`python3 -m venv env`
+
+Activate venv
+`source env/bin/activate`
+
+Deactivate venv
+`deactivate`
+
+### Running webapp
+
+source env/bin/activate
+python web.py
+
+Visit http://127.0.0.1:5000/

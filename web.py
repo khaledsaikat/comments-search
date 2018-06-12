@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask
-from flask import render_template
-from flask import request
-from flask import json
+from flask import Flask, json, render_template, request, jsonify
 
 from questions import Questions
 
@@ -26,3 +23,13 @@ def suggestion(query):
 def debug(query):
     query_result = Questions().search(query)
     return json.dumps(query_result), {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
+
+
+@app.route("/search/<query>")
+def search(query):
+    """REST endpoint for search by query"""
+    return jsonify(Questions().combined_search(query))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
