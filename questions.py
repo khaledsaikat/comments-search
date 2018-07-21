@@ -4,6 +4,7 @@ from typing import Dict, List, Generator
 import requests
 from elasticsearch import Elasticsearch
 from sklearn.feature_extraction.text import CountVectorizer
+from stopwords import stopwords
 
 BASE_URL = "https://www.khanacademy.org"
 
@@ -101,7 +102,7 @@ class Questions:
         return self.elasticsearch.search(index=self.indexName, body=body)
 
     def combined_search(self, _query: str):
-        results = self.search(_query)
+        results = self.search(" ".join(self.get_tokens(_query)))
         if results["hits"]["total"] > 0:
             return results
 
@@ -121,7 +122,12 @@ class Questions:
                 "text": _text
             }
         results = self.elasticsearch.indices.analyze(index=self.indexName, body=body)
-        return [result["token"] for result in results["tokens"]]
+        return self.remove_stopwords([result["token"] for result in results["tokens"]])
+
+    @staticmethod
+    def remove_stopwords(tokens: List[str]):
+        """Remove stopwords from the query"""
+        return [token for token in tokens if token not in stopwords]
 
     @staticmethod
     def tokens_to_query(tokens: List[str]):
