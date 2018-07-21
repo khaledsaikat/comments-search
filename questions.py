@@ -81,6 +81,8 @@ class Questions:
 
     def search(self, _query: str):
         """Search from elasticsearch"""
+        _query = self.remove_stopwords(_query)
+        print(_query)
         body = \
             {
                 "query": {
@@ -102,7 +104,8 @@ class Questions:
         return self.elasticsearch.search(index=self.indexName, body=body)
 
     def combined_search(self, _query: str):
-        results = self.search(" ".join(self.get_tokens(_query)))
+        _query = self.remove_stopwords(_query)
+        results = self.search(_query)
         if results["hits"]["total"] > 0:
             return results
 
@@ -122,12 +125,12 @@ class Questions:
                 "text": _text
             }
         results = self.elasticsearch.indices.analyze(index=self.indexName, body=body)
-        return self.remove_stopwords([result["token"] for result in results["tokens"]])
+        return [result["token"] for result in results["tokens"]]
 
     @staticmethod
-    def remove_stopwords(tokens: List[str]):
+    def remove_stopwords(text: str) -> str:
         """Remove stopwords from the query"""
-        return [token for token in tokens if token not in stopwords]
+        return " ".join([token for token in text.lower().split() if token not in stopwords])
 
     @staticmethod
     def tokens_to_query(tokens: List[str]):
