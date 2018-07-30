@@ -4,7 +4,7 @@ from collections import Counter
 
 import numpy as np
 from sklearn.metrics import cohen_kappa_score
-
+import matplotlib.pyplot as plt
 
 from questions import Questions
 
@@ -93,16 +93,27 @@ def merge_evaluate_files(file1, file2):
 def evaluate():
     combined = merge_evaluate_files("data/evaluate1.json", "data/evaluate2.json")
     evaluate_data = {}
+    cohen_kappa_list = []
     for question, answers in combined.items():
         print(question)
         #print(answers)
         cohen_kappa = cohen_kappa_score(indexing(answers[0]), indexing(answers[1]))
+        cohen_kappa_list.append(cohen_kappa)
         print("cohen_kappa:", cohen_kappa)
         if cohen_kappa >= 0.5:
             common_ids = list(set.intersection(set(answers[0]), set(answers[1])))
             evaluate_data[question] = common_ids
             Evaluation(question, common_ids).result()
 
+    plt.xlabel("Number of agreed questions")
+    plt.ylabel("Number of queries")
+    plt.hist(list(map(len, evaluate_data.values())))
+    plt.show()
+
+    plt.xlabel("Cohen kappa score")
+    plt.ylabel("Number of queries")
+    plt.hist(cohen_kappa_list)
+    plt.show()
 
 
 if __name__ == "__main__":
